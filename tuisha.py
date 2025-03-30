@@ -2,7 +2,7 @@ import hashlib
 import os
 
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal
 from textual.message import Message
 from textual.widgets import Button, Input, Label, Static, Tree
 
