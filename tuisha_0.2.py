@@ -3,6 +3,7 @@
 import hashlib
 import os
 
+from textual import events
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.message import Message
@@ -70,6 +71,14 @@ class FileBrowser(Tree):
             self.populate_tree(node.data)
         else:
             self.post_message(FileSelected(node.data))
+
+    def on_focus(self, event: events.Focus) -> None:
+        """Automatically select the first item in the file browser on focus."""
+        root = self.tree.tree.root
+        if root and root.children:
+            first_child = root.children[0]
+            self.tree.tree.select_node(first_child.id)
+            self.tree.tree.scroll_to_node(first_child.id)
 
 
 class SHA256Verifier(App):
