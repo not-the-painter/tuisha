@@ -74,11 +74,11 @@ class FileBrowser(Tree):
 
     def on_focus(self, event: events.Focus) -> None:
         """Automatically select the first item in the file browser on focus."""
-        root = self.tree.tree.root
-        if root and root.children:
-            first_child = root.children[0]
-            self.tree.tree.select_node(first_child.id)
-            self.tree.tree.scroll_to_node(first_child.id)
+        # The first node is directly accessible from the tree's nodes collection
+        if self.root.children:
+            first_child = self.root.children[0]
+            self.select_node(first_child)
+            self.scroll_to_node(first_child)
 
 
 class SHA256Verifier(App):
