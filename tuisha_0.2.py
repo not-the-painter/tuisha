@@ -135,6 +135,12 @@ class SHA256Verifier(App):
         self.file_input.value = message.path
         self.file_input.focus()
 
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle Enter key press in input fields."""
+        if event.input == self.file_input:
+            self.verify_hash()
+            self.query_one("#quit_button").focus()
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button clicks for verification and clearing fields."""
         button_id = event.button.id
