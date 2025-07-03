@@ -5,8 +5,9 @@ import os
 
 from textual import events
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal
+from textual.containers import Horizontal, Vertical
 from textual.message import Message
+from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Static, Tree
 
 
@@ -16,6 +17,14 @@ class FileSelected(Message):
     def __init__(self, file_path: str):
         super().__init__()
         self.path = file_path
+
+
+class ModeSelected(Message):
+    """Custom event for mode selection in the menu."""
+
+    def __init__(self, mode: str):
+        super().__init__()
+        self.mode = mode
 
 
 class FileBrowser(Tree):
@@ -81,11 +90,68 @@ class FileBrowser(Tree):
             self.scroll_to_node(first_child)
 
 
-class SHA256Verifier(App):
-    """A Textual-based TUI for verifying SHA-256 file hashes with a file browser."""
+class MenuScreen(Screen):
+    """Welcome screen with mode selection."""
 
     CSS = """
-    Screen {
+    MenuScreen {
+        align: center middle;
+    }
+    #menu_container {
+        width: 50%;
+        height: auto;
+        align: center middle;
+        padding: 2;
+        border: solid $primary;
+        background: $surface;
+    }
+    #menu_title {
+        text-align: center;
+        margin-bottom: 2;
+    }
+    #menu_buttons {
+        align: center middle;
+        padding: 1;
+    }
+    #menu_buttons Button {
+        width: 100%;
+        margin: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        """Define the menu UI layout."""
+        with Vertical(id="menu_container"):
+            yield Label("🔍 SHA-256 File Checksum Tool", id="menu_title")
+            yield Static("Choose an option:")
+            with Vertical(id="menu_buttons"):
+                yield Button("1. Verify Hash", id="verify_mode", variant="primary")
+                yield Button("2. Generate Hash", id="generate_mode")
+
+    def on_mount(self) -> None:
+        """Set focus to the verify button on mount."""
+        self.query_one("#verify_mode").focus()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle mode selection."""
+        if event.button.id == "verify_mode":
+            self.post_message(ModeSelected("verify"))
+        elif event.button.id == "generate_mode":
+            self.post_message(ModeSelected("generate"))
+
+    def on_key(self, event: events.Key) -> None:
+        """Handle keyboard navigation."""
+        if event.key == "1":
+            self.post_message(ModeSelected("verify"))
+        elif event.key == "2":
+            self.post_message(ModeSelected("generate"))
+
+
+class VerifyHashScreen(Screen):
+    """Screen for hash verification mode."""
+
+    CSS = """
+    VerifyHashScreen {
         align: center middle;
     }
     Input {
@@ -105,8 +171,8 @@ class SHA256Verifier(App):
     """
 
     def compose(self) -> ComposeResult:
-        """Define the UI layout."""
-        yield Label("🔍 SHA-256 File Checksum Verifier", id="title")
+        """Define the verification UI layout."""
+        yield Label("🔍 SHA-256 Hash Verification", id="title")
         yield Static("Enter Expected SHA-256 Hash:")
         self.hash_input = Input(placeholder="Paste the expected SHA-256 hash here")
         yield self.hash_input
@@ -123,9 +189,8 @@ class SHA256Verifier(App):
         yield Horizontal(
             Button("Verify", id="verify_button"),
             Button("Clear", id="clear_button"),
-            Button("Quit", id="quit_button"),
+            Button("Back to Menu", id="back_button"),
             id="button_row",
-            classes="button-row",  # Optional class for future styling
         )
 
         self.result_label = Label("")
@@ -139,22 +204,27 @@ class SHA256Verifier(App):
         """Handle Enter key press in input fields."""
         if event.input == self.file_input:
             self.verify_hash()
-            self.query_one("#quit_button").focus()
+            self.query_one("#back_button").focus()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button clicks for verification and clearing fields."""
+        """Handle button clicks."""
         button_id = event.button.id
 
         if button_id == "verify_button":
             self.verify_hash()
         elif button_id == "clear_button":
             self.clear_fields()
-        elif button_id == "quit_button":
-            self.exit()
+        elif button_id == "back_button":
+            self.app.pop_screen()
+
+    def on_key(self, event: events.Key) -> None:
+        """Handle Esc key to return to menu."""
+        if event.key == "escape":
+            self.app.pop_screen()
 
     def hashfile(self, file_path: str) -> str | None:
         """Computes the SHA-256 hash of the given file."""
-        BUF_SIZE = 65536  # Read file in 64KB chunks
+        BUF_SIZE = 65536
         sha256 = hashlib.sha256()
 
         try:
@@ -199,6 +269,145 @@ class SHA256Verifier(App):
         self.hash_input.value = ""
         self.file_input.value = ""
         self.result_label.update("")
+
+
+class GenerateHashScreen(Screen):
+    """Screen for hash generation mode."""
+
+    CSS = """
+    GenerateHashScreen {
+        align: center middle;
+    }
+    Input {
+        width: 80%;
+    }
+    Button {
+        width: 30%;
+    }
+    Label {
+        text-align: center;
+    }
+    #button_row {
+        width: 80%;
+        align-horizontal: center;
+        padding: 1;
+    }
+    #hash_output {
+        width: 80%;
+        margin: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        """Define the hash generation UI layout."""
+        yield Label("🔐 SHA-256 Hash Generation", id="title")
+        yield Static("Select File:")
+        self.file_input = Input(
+            placeholder="Enter file path manually or use the file browser", type="text"
+        )
+        yield self.file_input
+
+        self.file_browser = FileBrowser(path=os.getcwd(), id="file_browser")
+        yield self.file_browser
+
+        yield Static("Generated Hash (click to copy):")
+        self.hash_output = Input(placeholder="Hash will appear here...", id="hash_output")
+        self.hash_output.disabled = False
+        yield self.hash_output
+
+        yield Horizontal(
+            Button("Generate", id="generate_button"),
+            Button("Clear", id="clear_button"),
+            Button("Back to Menu", id="back_button"),
+            id="button_row",
+        )
+
+        self.result_label = Label("")
+        yield self.result_label
+
+    def on_file_selected(self, message: FileSelected) -> None:
+        self.file_input.value = message.path
+        self.generate_hash()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle Enter key press in file input."""
+        if event.input == self.file_input:
+            self.generate_hash()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """Handle button clicks."""
+        button_id = event.button.id
+
+        if button_id == "generate_button":
+            self.generate_hash()
+        elif button_id == "clear_button":
+            self.clear_fields()
+        elif button_id == "back_button":
+            self.app.pop_screen()
+
+    def on_key(self, event: events.Key) -> None:
+        """Handle Esc key to return to menu."""
+        if event.key == "escape":
+            self.app.pop_screen()
+
+    def hashfile(self, file_path: str) -> str | None:
+        """Computes the SHA-256 hash of the given file."""
+        BUF_SIZE = 65536
+        sha256 = hashlib.sha256()
+
+        try:
+            with open(file_path, "rb") as f:
+                while chunk := f.read(BUF_SIZE):
+                    sha256.update(chunk)
+            return sha256.hexdigest()
+        except FileNotFoundError:
+            self.result_label.update("❌ Error: File not found.")
+        except PermissionError:
+            self.result_label.update("❌ Error: Permission denied.")
+        except Exception as e:
+            self.result_label.update(f"⚠️ Unexpected error: {e}")
+
+        return None
+
+    def generate_hash(self) -> None:
+        """Generates the SHA-256 hash of the selected file."""
+        file_path = self.file_input.value.strip()
+
+        if not file_path or not os.path.isfile(file_path):
+            self.result_label.update("⚠️ Error: Please enter a valid file path.")
+            self.hash_output.value = ""
+            return
+
+        self.result_label.update("🔄 Generating hash...")
+
+        computed_hash = self.hashfile(file_path)
+
+        if computed_hash:
+            self.hash_output.value = computed_hash
+            self.result_label.update("✅ Hash generated successfully. Click the hash field to copy.")
+        else:
+            self.hash_output.value = ""
+
+    def clear_fields(self) -> None:
+        """Clears the input fields and result label."""
+        self.file_input.value = ""
+        self.hash_output.value = ""
+        self.result_label.update("")
+
+
+class SHA256Verifier(App):
+    """A Textual-based TUI for SHA-256 file operations with menu navigation."""
+
+    def on_mount(self) -> None:
+        """Show the menu screen on startup."""
+        self.push_screen(MenuScreen())
+
+    def on_mode_selected(self, message: ModeSelected) -> None:
+        """Handle mode selection from the menu."""
+        if message.mode == "verify":
+            self.push_screen(VerifyHashScreen())
+        elif message.mode == "generate":
+            self.push_screen(GenerateHashScreen())
 
 
 if __name__ == "__main__":
