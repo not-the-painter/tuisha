@@ -127,6 +127,7 @@ class MenuScreen(Screen):
             with Vertical(id="menu_buttons"):
                 yield Button("1. Verify Hash", id="verify_mode", variant="primary")
                 yield Button("2. Generate Hash", id="generate_mode")
+                yield Button("Q. Quit", id="quit_button", variant="error")
 
     def on_mount(self) -> None:
         """Set focus to the verify button on mount."""
@@ -138,6 +139,8 @@ class MenuScreen(Screen):
             self.post_message(ModeSelected("verify"))
         elif event.button.id == "generate_mode":
             self.post_message(ModeSelected("generate"))
+        elif event.button.id == "quit_button":
+            self.app.exit()
 
     def on_key(self, event: events.Key) -> None:
         """Handle keyboard navigation."""
@@ -145,6 +148,8 @@ class MenuScreen(Screen):
             self.post_message(ModeSelected("verify"))
         elif event.key == "2":
             self.post_message(ModeSelected("generate"))
+        elif event.key == "q":
+            self.app.exit()
 
 
 class VerifyHashScreen(Screen):
@@ -310,7 +315,7 @@ class GenerateHashScreen(Screen):
         self.file_browser = FileBrowser(path=os.getcwd(), id="file_browser")
         yield self.file_browser
 
-        yield Static("Generated Hash (click to copy):")
+        yield Static("Generated Hash (click field or press Enter to copy):")
         self.hash_output = Input(placeholder="Hash will appear here...", id="hash_output")
         self.hash_output.disabled = False
         yield self.hash_output
@@ -333,6 +338,11 @@ class GenerateHashScreen(Screen):
         """Handle Enter key press in file input."""
         if event.input == self.file_input:
             self.generate_hash()
+        elif event.input == self.hash_output:
+            # Copy hash to clipboard when user presses Enter in the hash field
+            if self.hash_output.value:
+                self.app.copy_to_clipboard(self.hash_output.value)
+                self.result_label.update("✅ Hash copied to clipboard!")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button clicks."""
@@ -349,6 +359,14 @@ class GenerateHashScreen(Screen):
         """Handle Esc key to return to menu."""
         if event.key == "escape":
             self.app.pop_screen()
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        """Handle mouse clicks on the hash output field."""
+        # Check if the click is on the hash output field
+        widget = self.get_widget_at(event.x, event.y)[0]
+        if widget == self.hash_output and self.hash_output.value:
+            self.app.copy_to_clipboard(self.hash_output.value)
+            self.result_label.update("✅ Hash copied to clipboard!")
 
     def hashfile(self, file_path: str) -> str | None:
         """Computes the SHA-256 hash of the given file."""
@@ -384,7 +402,7 @@ class GenerateHashScreen(Screen):
 
         if computed_hash:
             self.hash_output.value = computed_hash
-            self.result_label.update("✅ Hash generated successfully. Click the hash field to copy.")
+            self.result_label.update("✅ Hash generated successfully. Click the hash field or press Enter to copy.")
         else:
             self.hash_output.value = ""
 
@@ -408,6 +426,11 @@ class SHA256Verifier(App):
             self.push_screen(VerifyHashScreen())
         elif message.mode == "generate":
             self.push_screen(GenerateHashScreen())
+
+    def on_key(self, event: events.Key) -> None:
+        """Handle global key events."""
+        if event.key == "q" or event.key == "ctrl+c":
+            self.exit()
 
 
 if __name__ == "__main__":
