@@ -31,7 +31,7 @@ class FileBrowser(Tree):
     """Enhanced File Browser with navigation support."""
 
     def __init__(self, path: str, **kwargs):
-        super().__init__("📂 Select a File", **kwargs)
+        super().__init__("📂  Select a File", **kwargs)
         self.current_path = path  # Track the current directory
         self.show_root = False  # Hide the root folder name
         self.populate_tree(path)  # Ensure this method is defined!
@@ -45,7 +45,7 @@ class FileBrowser(Tree):
         try:
             parent_dir = os.path.abspath(os.path.join(path, os.pardir))
             if parent_dir != path:  # Prevent navigating above the filesystem root
-                up_node = node.add("⬆ .. (Parent Directory)", data=parent_dir)
+                up_node = node.add("⬆  .. (Parent Directory)", data=parent_dir)
                 up_node.allow_expand = False  # Special case: Up navigation
 
             for entry in sorted(
@@ -55,11 +55,11 @@ class FileBrowser(Tree):
                     continue
 
                 if entry.is_dir():
-                    branch = node.add(f"📁 {entry.name}", expand=False)
+                    branch = node.add(f"📁  {entry.name}", expand=False)
                     branch.data = entry.path
                     branch.allow_expand = True  # Allow expanding folders
                 else:
-                    leaf = node.add(f"📄 {entry.name}", data=entry.path)
+                    leaf = node.add(f"📄  {entry.name}", data=entry.path)
                     leaf.allow_expand = False  # Files are leaf nodes
 
         except PermissionError:
@@ -74,7 +74,7 @@ class FileBrowser(Tree):
 
         label_text = str(node.label)  # Convert label to string for comparison
 
-        if label_text.startswith("⬆ .."):
+        if label_text.startswith("⬆  .."):
             self.populate_tree(node.data)
         elif node.allow_expand:
             self.populate_tree(node.data)
@@ -122,7 +122,7 @@ class MenuScreen(Screen):
     def compose(self) -> ComposeResult:
         """Define the menu UI layout."""
         with Vertical(id="menu_container"):
-            yield Label("🔍 SHA-256 File Checksum Tool", id="menu_title")
+            yield Label("🔍  SHA-256 File Checksum Tool", id="menu_title")
             yield Static("Choose an option:")
             with Vertical(id="menu_buttons"):
                 yield Button("1. Verify Hash", id="verify_mode", variant="primary")
@@ -177,7 +177,7 @@ class VerifyHashScreen(Screen):
 
     def compose(self) -> ComposeResult:
         """Define the verification UI layout."""
-        yield Label("🔍 SHA-256 Hash Verification", id="title")
+        yield Label("🔍  SHA-256 Hash Verification", id="title")
         yield Static("Enter Expected SHA-256 Hash:")
         self.hash_input = Input(placeholder="Paste the expected SHA-256 hash here")
         yield self.hash_input
@@ -238,11 +238,11 @@ class VerifyHashScreen(Screen):
                     sha256.update(chunk)
             return sha256.hexdigest()
         except FileNotFoundError:
-            self.result_label.update("❌ Error: File not found.")
+            self.result_label.update("❌  Error: File not found.")
         except PermissionError:
-            self.result_label.update("❌ Error: Permission denied.")
+            self.result_label.update("❌  Error: Permission denied.")
         except Exception as e:
-            self.result_label.update(f"⚠️ Unexpected error: {e}")
+            self.result_label.update(f"⚠️  Unexpected error: {e}")
 
         return None
 
@@ -252,22 +252,22 @@ class VerifyHashScreen(Screen):
         file_path = self.file_input.value.strip()
 
         if not expected_hash:
-            self.result_label.update("⚠️ Error: Expected hash cannot be empty.")
+            self.result_label.update("⚠️  Error: Expected hash cannot be empty.")
             return
 
         if not file_path or not os.path.isfile(file_path):
-            self.result_label.update("⚠️ Error: Please enter a valid file path.")
+            self.result_label.update("⚠️  Error: Please enter a valid file path.")
             return
 
-        self.result_label.update("🔄 Verifying checksum...")
+        self.result_label.update("🔄  Verifying checksum...")
 
         computed_hash = self.hashfile(file_path)
 
         if computed_hash:
             if expected_hash.lower() == computed_hash.lower():
-                self.result_label.update("✅ Hashes match, file is legit.")
+                self.result_label.update("✅  Hashes match, file is legit.")
             else:
-                self.result_label.update("❌ Hashes are different, beware!")
+                self.result_label.update("❌  Hashes are different, beware!")
 
     def clear_fields(self) -> None:
         """Clears the input fields and result label."""
@@ -305,7 +305,7 @@ class GenerateHashScreen(Screen):
 
     def compose(self) -> ComposeResult:
         """Define the hash generation UI layout."""
-        yield Label("🔐 SHA-256 Hash Generation", id="title")
+        yield Label("🔐  SHA-256 Hash Generation", id="title")
         yield Static("Select File:")
         self.file_input = Input(
             placeholder="Enter file path manually or use the file browser", type="text"
@@ -342,7 +342,7 @@ class GenerateHashScreen(Screen):
             # Copy hash to clipboard when user presses Enter in the hash field
             if self.hash_output.value:
                 self.app.copy_to_clipboard(self.hash_output.value)
-                self.result_label.update("✅ Hash copied to clipboard!")
+                self.result_label.update("✅  Hash copied to clipboard!")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button clicks."""
@@ -366,7 +366,7 @@ class GenerateHashScreen(Screen):
         widget = self.get_widget_at(event.x, event.y)[0]
         if widget == self.hash_output and self.hash_output.value:
             self.app.copy_to_clipboard(self.hash_output.value)
-            self.result_label.update("✅ Hash copied to clipboard!")
+            self.result_label.update("✅  Hash copied to clipboard!")
 
     def hashfile(self, file_path: str) -> str | None:
         """Computes the SHA-256 hash of the given file."""
@@ -379,11 +379,11 @@ class GenerateHashScreen(Screen):
                     sha256.update(chunk)
             return sha256.hexdigest()
         except FileNotFoundError:
-            self.result_label.update("❌ Error: File not found.")
+            self.result_label.update("❌  Error: File not found.")
         except PermissionError:
-            self.result_label.update("❌ Error: Permission denied.")
+            self.result_label.update("❌  Error: Permission denied.")
         except Exception as e:
-            self.result_label.update(f"⚠️ Unexpected error: {e}")
+            self.result_label.update(f"⚠️  Unexpected error: {e}")
 
         return None
 
@@ -392,17 +392,17 @@ class GenerateHashScreen(Screen):
         file_path = self.file_input.value.strip()
 
         if not file_path or not os.path.isfile(file_path):
-            self.result_label.update("⚠️ Error: Please enter a valid file path.")
+            self.result_label.update("⚠️  Error: Please enter a valid file path.")
             self.hash_output.value = ""
             return
 
-        self.result_label.update("🔄 Generating hash...")
+        self.result_label.update("🔄  Generating hash...")
 
         computed_hash = self.hashfile(file_path)
 
         if computed_hash:
             self.hash_output.value = computed_hash
-            self.result_label.update("✅ Hash generated successfully. Click the hash field or press Enter to copy.")
+            self.result_label.update("✅  Hash generated successfully. Click the hash field or press Enter to copy.")
         else:
             self.hash_output.value = ""
 
