@@ -37,7 +37,7 @@ The app requires the following Python packages:
 ### Running the Application
 
 ```bash
-python tuisha_0.2.py
+python tuisha.py
 ```
 
 ### Main Menu
@@ -86,7 +86,7 @@ When you start the app, you'll see a menu with three options:
 
 ```
 tuisha/
-├── tuisha_0.2.py          # Main application file
+├── tuisha.py              # Main application file
 ├── requirements.txt       # Python dependencies
 ├── README.md             # This file
 ├── LICENSE               # License information
