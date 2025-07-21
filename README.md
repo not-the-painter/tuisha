@@ -89,8 +89,7 @@ tuisha/
 ├── tuisha.py              # Main application file
 ├── requirements.txt       # Python dependencies
 ├── README.md             # This file
-├── LICENSE               # License information
-└── generic_app_template.py # Template for new Textual apps
+└── LICENSE               # License information
 ```
 
 ## 🛠  Technical Details
