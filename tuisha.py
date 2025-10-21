@@ -2,6 +2,7 @@
 
 import hashlib
 import os
+from typing import Optional
 
 from textual import events
 from textual.app import App, ComposeResult
@@ -227,7 +228,7 @@ class VerifyHashScreen(Screen):
         if event.key == "escape":
             self.app.pop_screen()
 
-    def hashfile(self, file_path: str) -> str | None:
+    def hashfile(self, file_path: str) -> Optional[str]:
         """Computes the SHA-256 hash of the given file."""
         BUF_SIZE = 65536
         sha256 = hashlib.sha256()
@@ -368,7 +369,7 @@ class GenerateHashScreen(Screen):
             self.app.copy_to_clipboard(self.hash_output.value)
             self.result_label.update("✅  Hash copied to clipboard!")
 
-    def hashfile(self, file_path: str) -> str | None:
+    def hashfile(self, file_path: str) -> Optional[str]:
         """Computes the SHA-256 hash of the given file."""
         BUF_SIZE = 65536
         sha256 = hashlib.sha256()
